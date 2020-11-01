@@ -238,9 +238,9 @@ class Edrone():
         # ------------------------------------------------------------------------------------------------------------------------
 
         self.pwm_pub.publish(self.pwm_cmd)
-        self.error_roll_pub.publish(self.out_roll)
-        self.error_pitch_pub.publish(self.out_pitch)
-        self.error_yaw_pub.publish(self.out_yaw)
+        self.error_roll_pub.publish(self.error[0])
+        self.error_pitch_pub.publish(self.error[1])
+        self.error_yaw_pub.publish(self.error[2])
 
 
 if __name__ == '__main__':
