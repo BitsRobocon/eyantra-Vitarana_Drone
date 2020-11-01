@@ -43,7 +43,7 @@ class Edrone():
 
         # This is the setpoint that will be received from the drone_command in the range from 1000 to 2000
         # [r_setpoint, p_setpoint, y_setpoint]
-        self.setpoint_cmd = [1500.0, 1500.0, 1500.0, 1500.0]
+        self.setpoint_cmd = [1500.0, 1500.0, 1500.0, 1500]
 
         # The setpoint of orientation in euler angles at which you want to stabilize the drone
         # [r_setpoint, p_psetpoint, y_setpoint]
@@ -86,6 +86,9 @@ class Edrone():
 
         # Publishing /edrone/pwm, /roll_error, /pitch_error, /yaw_error
         self.pwm_pub = rospy.Publisher('/edrone/pwm', prop_speed, queue_size=1)
+        self.error_roll_pub = rospy.Publisher('/roll_error', Float32, queue_size=1)
+        self.error_pitch_pub = rospy.Publisher('/pitch_error', Float32, queue_size=1)
+        self.error_yaw_pub = rospy.Publisher('/yaw_error', Float32, queue_size=1)
         # ------------------------Add other ROS Publishers here-----------------------------------------------------
 
         # -----------------------------------------------------------------------------------------------------------
@@ -235,12 +238,18 @@ class Edrone():
         # ------------------------------------------------------------------------------------------------------------------------
 
         self.pwm_pub.publish(self.pwm_cmd)
+        self.error_roll_pub.publish(self.out_roll)
+        self.error_pitch_pub.publish(self.out_pitch)
+        self.error_yaw_pub.publish(self.out_yaw)
 
 
 if __name__ == '__main__':
 
     e_drone = Edrone()
-    r = rospy.Rate(15)  # specify rate in Hz based upon your desired PID sampling time, i.e. if desired sample time is 33ms specify rate as 30Hz
+    r = rospy.Rate(30)  # specify rate in Hz based upon your desired PID sampling time, i.e. if desired sample time is 33ms specify rate as 30Hz
     while not rospy.is_shutdown():
         e_drone.pid()
-        r.sleep()
+        try:
+            r.sleep()
+        except rospy.exceptions.ROSTimeMovedBackwardsException:
+            continue
