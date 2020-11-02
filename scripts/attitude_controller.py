@@ -43,7 +43,7 @@ class Edrone():
 
         # This is the setpoint that will be received from the drone_command in the range from 1000 to 2000
         # [r_setpoint, p_setpoint, y_setpoint]
-        self.setpoint_cmd = [1500.0, 1500.0, 1500.0, 1500]
+        self.setpoint_cmd = [1500.0, 1500.0, 1500.0, 1500.0]
 
         # The setpoint of orientation in euler angles at which you want to stabilize the drone
         # [r_setpoint, p_psetpoint, y_setpoint]
@@ -138,7 +138,7 @@ class Edrone():
         self.Kp[0] = roll.Kp * 0.06  # This is just for an example. You can change the ratio/fraction value accordingly
         self.Ki[0] = roll.Ki * 0.008
         self.Kd[0] = roll.Kd * 0.3
-    
+
     def pitch_set_pid(self, roll):
         self.Kp[0] = roll.Kp * 0.06  # This is just for an example. You can change the ratio/fraction value accordingly
         self.Ki[0] = roll.Ki * 0.008
@@ -148,6 +148,7 @@ class Edrone():
         self.Kp[0] = roll.Kp * 0.06  # This is just for an example. You can change the ratio/fraction value accordingly
         self.Ki[0] = roll.Ki * 0.008
         self.Kd[0] = roll.Kd * 0.3
+
     def pid(self):
         # -----------------------------Write the PID algorithm here--------------------------------------------------------------
 
@@ -182,7 +183,6 @@ class Edrone():
         self.error[1] = self.setpoint_euler[1] - (self.drone_orientation_euler[1]*(180/math.pi))
         self.error[2] = self.setpoint_euler[2] - (self.drone_orientation_euler[2]*(180/math.pi))
 
-
         self.error_sum[0] = self.error_sum[0] + self.error[0]
         self.error_sum[1] = self.error_sum[1] + self.error[1]
         self.error_sum[2] = self.error_sum[2] + self.error[2]
@@ -191,7 +191,6 @@ class Edrone():
         self.out_roll = (self.Kp[0] * self.error[0]) + (self.Ki[0] * self.error_sum[0]) + ((self.Kd[0] * (self.error[0] - self.prev_values[0]))/self.sample_time)
         self.out_pitch = (self.Kp[1] * self.error[1]) + (self.Ki[1] * self.error_sum[1]) + ((self.Kd[1] * (self.error[1] - self.prev_values[1]))/self.sample_time)
         self.out_yaw = (self.Kp[2] * self.error[2]) + (self.Ki[2] * self.error_sum[2]) + ((self.Kd[2] * (self.error[2] - self.prev_values[2]))/self.sample_time)
-
 
         # Changing the previous sum value
         self.prev_values[0] = self.error[0]
@@ -204,33 +203,11 @@ class Edrone():
         self.pwm_cmd.prop3 = self.throttle + self.out_roll - self.out_pitch - self.out_yaw
         self.pwm_cmd.prop4 = self.throttle + self.out_roll + self.out_pitch + self.out_yaw
 
-        if self.pwm_cmd.prop1 > self.max_values[0]:
-            self.pwm_cmd.prop1 = self.max_values[0]
-        elif self.pwm_cmd.prop1 < self.min_values[0]:
-            self.pwm_cmd.prop1 = self.min_values[0]
-        else:
-            self.pwm_cmd.prop1 = self.pwm_cmd.prop1
-
-        if self.pwm_cmd.prop2 > self.max_values[1]:
-            self.pwm_cmd.prop2 = self.max_values[1]
-        elif self.pwm_cmd.prop2 < self.min_values[1]:
-            self.pwm_cmd.prop2 = self.min_values[1]
-        else:
-            self.pwm_cmd.prop2 = self.pwm_cmd.prop2
-        
-        if self.pwm_cmd.prop3 > self.max_values[2]:
-            self.pwm_cmd.prop3 = self.max_values[2]
-        elif self.pwm_cmd.prop3 < self.min_values[2]:
-            self.pwm_cmd.prop3 = self.min_values[2]
-        else:
-            self.pwm_cmd.prop3 = self.pwm_cmd.prop3
-
-        if self.pwm_cmd.prop4 > self.max_values[3]:
-            self.pwm_cmd.prop4 = self.max_values[3]
-        elif self.pwm_cmd.prop4 < self.min_values[3]:
-            self.pwm_cmd.prop4 = self.min_values[3]
-        else:
-            self.pwm_cmd.prop4 = self.pwm_cmd.prop4
+        # Limiting the output values
+        self.pwm_cmd.prop1 = max(min(self.max_values[0], self.pwm_cmd.prop1), self.min_values[0])
+        self.pwm_cmd.prop2 = max(min(self.max_values[1], self.pwm_cmd.prop2), self.min_values[1])
+        self.pwm_cmd.prop3 = max(min(self.max_values[2], self.pwm_cmd.prop3), self.min_values[2])
+        self.pwm_cmd.prop4 = max(min(self.max_values[3], self.pwm_cmd.prop4), self.min_values[3])
 
         #
         #
