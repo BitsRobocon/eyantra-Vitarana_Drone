@@ -18,7 +18,7 @@ CODE MODULARITY AND TECHNIQUES MENTIONED LIKE THIS WILL HELP YOU GAINING MORE MA
 
 from vitarana_drone.msg import *
 from pid_tune.msg import PidTune
-from sensor_msgs.msg import Imu
+from sensor_msgs.msg import Imu, LaserScan
 from std_msgs.msg import Float32
 import math
 import rospy
@@ -66,15 +66,22 @@ class Edrone():
         self.K_throttle = [0, 0, 0] #  [Kp, Ki, Kd]
         # -----------------------Add other required variables for pid here ----------------------------------------------
         #
+        self.altitude = 0.
         self.throttle = 0
+        self.error_throttle = 0
+        self.prev_throttle = 0 
+        self.sum_errort = 0 
+        self.target_altitude = 3.
         self.prev_values = [0,0,0]
         self.error = [0,0,0]
         self.error_sum = [0,0,0]
         self.min_values = [0,0,0,0]
         self.max_values = [1024,1024,1024,1024]
+
         self.out_roll = 0
         self.out_pitch = 0
         self.out_yaw = 0
+        self.out_throttle = 0
         # Hint : Add variables for storing previous errors in each axis, like self.prev_values = [0,0,0] where corresponds to [roll, pitch, yaw]
         #        Add variables for limiting the values like self.max_values = [1024, 1024, 1024, 1024] corresponding to [prop1, prop2, prop3, prop4]
         #                                                   self.min_values = [0, 0, 0, 0] corresponding to [prop1, prop2, prop3, prop4]
@@ -102,7 +109,7 @@ class Edrone():
         rospy.Subscriber('/pid_tuning_pitch', PidTune, self.pitch_set_pid)
         rospy.Subscriber('/pid_tuning_yaw', PidTune, self.yaw_set_pid)
         rospy.Subscriber('/pid_tuning_altitude', PidTune, self.throttle_set_pid)
-        #rospy.Subscriber('/edrone/range_finder_bottom', , )
+        rospy.Subscriber('/edrone/range_finder_bottom', LaserScan , self.calculate_distance)
         # -------------------------Add other ROS Subscribers here----------------------------------------------------
         # ------------------------------------------------------------------------------------------------------------
 
@@ -155,10 +162,12 @@ class Edrone():
         self.Kd[2] = yaw.Kd * 0.3
     
     def throttle_set_pid(self, throttle):
-        self.K_throttle[0] = throttle * 0.06
-        self.K_throttle[1] = throttle * 0.008
-        self.K_throttle[2] = throttle * 0.3 
+        self.K_throttle[0] = throttle.Kp * 0.06
+        self.K_throttle[1] = throttle.Ki * 0.008
+        self.K_throttle[2] = throttle.Kd * 0.3 
 
+    def calculate_distance(self, msg):
+        self.altitude = msg.ranges[0]
 
     def pid(self):
         # -----------------------------Write the PID algorithm here--------------------------------------------------------------
@@ -190,29 +199,37 @@ class Edrone():
         self.throttle = (self.setpoint_cmd[3] - 1000) * 1.024
 
         # Calculating the error
-        self.error[0] = self.setpoint_euler[0] - (self.drone_orientation_euler[0]*(180/math.pi))
-        self.error[1] = self.setpoint_euler[1] - (self.drone_orientation_euler[1]*(180/math.pi))
-        self.error[2] = self.setpoint_euler[2] - (self.drone_orientation_euler[2]*(180/math.pi))
+        for i in range(3):
+            self.error[i] = self.setpoint_euler[i] - (self.drone_orientation_euler[i]*(180/math.pi))
+            self.error_sum[i] = self.error_sum[i] + self.error[i]
+        
+        self.error_throttle = self.target_altitude - self.altitude
+        self.sum_errort = self.sum_errort + self.error_throttle
+        # self.error[0] = self.setpoint_euler[0] - (self.drone_orientation_euler[0]*(180/math.pi))
+        # self.error[1] = self.setpoint_euler[1] - (self.drone_orientation_euler[1]*(180/math.pi))
+        # self.error[2] = self.setpoint_euler[2] - (self.drone_orientation_euler[2]*(180/math.pi))
 
-        self.error_sum[0] = self.error_sum[0] + self.error[0]
-        self.error_sum[1] = self.error_sum[1] + self.error[1]
-        self.error_sum[2] = self.error_sum[2] + self.error[2]
+        # self.error_sum[0] = self.error_sum[0] + self.error[0]
+        # self.error_sum[1] = self.error_sum[1] + self.error[1]
+        # self.error_sum[2] = self.error_sum[2] + self.error[2]
 
         # Calculating pid values
         self.out_roll = (self.Kp[0] * self.error[0]) + (self.Ki[0] * self.error_sum[0]) + ((self.Kd[0] * (self.error[0] - self.prev_values[0]))/self.sample_time)
         self.out_pitch = (self.Kp[1] * self.error[1]) + (self.Ki[1] * self.error_sum[1]) + ((self.Kd[1] * (self.error[1] - self.prev_values[1]))/self.sample_time)
         self.out_yaw = (self.Kp[2] * self.error[2]) + (self.Ki[2] * self.error_sum[2]) + ((self.Kd[2] * (self.error[2] - self.prev_values[2]))/self.sample_time)
+        self.out_throttle = (self.K_throttle[0] * self.error_throttle) + (self.K_throttle[1] * self.sum_errort) + ((self.K_throttle[2] * (self.error_throttle-self.prev_throttle ))/self.sample_time)
 
         # Changing the previous sum value
         self.prev_values[0] = self.error[0]
         self.prev_values[1] = self.error[1]
         self.prev_values[2] = self.error[2]
+        self.prev_throttle = self.error_throttle
 
         # Giving pwm values
-        self.pwm_cmd.prop1 = self.throttle - self.out_roll + self.out_pitch - self.out_yaw
-        self.pwm_cmd.prop2 = self.throttle - self.out_roll - self.out_pitch + self.out_yaw
-        self.pwm_cmd.prop3 = self.throttle + self.out_roll - self.out_pitch - self.out_yaw
-        self.pwm_cmd.prop4 = self.throttle + self.out_roll + self.out_pitch + self.out_yaw
+        self.pwm_cmd.prop1 = self.out_throttle - self.out_roll + self.out_pitch - self.out_yaw
+        self.pwm_cmd.prop2 = self.out_throttle - self.out_roll - self.out_pitch + self.out_yaw
+        self.pwm_cmd.prop3 = self.out_throttle + self.out_roll - self.out_pitch - self.out_yaw
+        self.pwm_cmd.prop4 = self.out_throttle + self.out_roll + self.out_pitch + self.out_yaw
 
         # Limiting the output values
         self.pwm_cmd.prop1 = max(min(self.max_values[0], self.pwm_cmd.prop1), self.min_values[0])
