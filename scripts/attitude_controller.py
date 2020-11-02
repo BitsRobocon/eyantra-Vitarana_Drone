@@ -31,8 +31,6 @@ class Edrone():
     def __init__(self):
         rospy.init_node('attitude_controller')  # initializing ros node with name drone_control
 
-        #rospy.init_node('z_error')
-
         # This corresponds to your current orientation of eDrone in quaternion format. This value must be updated each time in your imu callback
         # [x,y,z,w]
         self.drone_orientation_quaternion = [0.0, 0.0, 0.0, 0.0]
@@ -61,9 +59,9 @@ class Edrone():
 
         # initial setting of Kp, Kd and ki for [roll, pitch, yaw]. eg: self.Kp[2] corresponds to Kp value in yaw axis
         # after tuning and computing corresponding PID parameters, change the parameters
-        self.Kp = [0, 0, 0]
+        self.Kp = [4.02, 1.02, 82.56]
         self.Ki = [0, 0, 0]
-        self.Kd = [0, 0, 0]
+        self.Kd = [2.4, 1.2, 0]
 
         self.K_throttle = [0, 0, 0] #  [Kp, Ki, Kd]
         # -----------------------Add other required variables for pid here ----------------------------------------------
@@ -72,13 +70,11 @@ class Edrone():
         self.prev_values = [0,0,0]
         self.error = [0,0,0]
         self.error_sum = [0,0,0]
-        self.error_throttle = 0
         self.min_values = [0,0,0,0]
         self.max_values = [1024,1024,1024,1024]
         self.out_roll = 0
         self.out_pitch = 0
         self.out_yaw = 0
-        self.out_throttle = 0
         # Hint : Add variables for storing previous errors in each axis, like self.prev_values = [0,0,0] where corresponds to [roll, pitch, yaw]
         #        Add variables for limiting the values like self.max_values = [1024, 1024, 1024, 1024] corresponding to [prop1, prop2, prop3, prop4]
         #                                                   self.min_values = [0, 0, 0, 0] corresponding to [prop1, prop2, prop3, prop4]
@@ -106,6 +102,7 @@ class Edrone():
         rospy.Subscriber('/pid_tuning_pitch', PidTune, self.pitch_set_pid)
         rospy.Subscriber('/pid_tuning_yaw', PidTune, self.yaw_set_pid)
         rospy.Subscriber('/pid_tuning_altitude', PidTune, self.throttle_set_pid)
+        #rospy.Subscriber('/edrone/range_finder_bottom', , )
         # -------------------------Add other ROS Subscribers here----------------------------------------------------
         # ------------------------------------------------------------------------------------------------------------
 
