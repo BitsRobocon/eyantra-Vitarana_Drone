@@ -64,17 +64,21 @@ class Edrone():
         self.Kp = [0, 0, 0]
         self.Ki = [0, 0, 0]
         self.Kd = [0, 0, 0]
+
+        self.K_throttle = [0, 0, 0] #  [Kp, Ki, Kd]
         # -----------------------Add other required variables for pid here ----------------------------------------------
         #
         self.throttle = 0
         self.prev_values = [0,0,0]
         self.error = [0,0,0]
         self.error_sum = [0,0,0]
+        self.error_throttle = 0
         self.min_values = [0,0,0,0]
         self.max_values = [1024,1024,1024,1024]
         self.out_roll = 0
         self.out_pitch = 0
         self.out_yaw = 0
+        self.out_throttle = 0
         # Hint : Add variables for storing previous errors in each axis, like self.prev_values = [0,0,0] where corresponds to [roll, pitch, yaw]
         #        Add variables for limiting the values like self.max_values = [1024, 1024, 1024, 1024] corresponding to [prop1, prop2, prop3, prop4]
         #                                                   self.min_values = [0, 0, 0, 0] corresponding to [prop1, prop2, prop3, prop4]
@@ -89,6 +93,8 @@ class Edrone():
         self.error_roll_pub = rospy.Publisher('/roll_error', Float32, queue_size=1)
         self.error_pitch_pub = rospy.Publisher('/pitch_error', Float32, queue_size=1)
         self.error_yaw_pub = rospy.Publisher('/yaw_error', Float32, queue_size=1)
+        self.zero_pub = rospy.Publisher('/zero_error', Float32, queue_size=1)
+        self.z_error_pub = rospy.Publisher('z_error', Float32, queue_size=1)
         # ------------------------Add other ROS Publishers here-----------------------------------------------------
 
         # -----------------------------------------------------------------------------------------------------------
@@ -99,11 +105,13 @@ class Edrone():
         rospy.Subscriber('/pid_tuning_roll', PidTune, self.roll_set_pid)
         rospy.Subscriber('/pid_tuning_pitch', PidTune, self.pitch_set_pid)
         rospy.Subscriber('/pid_tuning_yaw', PidTune, self.yaw_set_pid)
+        rospy.Subscriber('/pid_tuning_altitude', PidTune, self.throttle_set_pid)
         # -------------------------Add other ROS Subscribers here----------------------------------------------------
         # ------------------------------------------------------------------------------------------------------------
 
     # Imu callback function
     # The function gets executed each time when imu publishes /edrone/imu/data
+
 
     # Note: The imu publishes various kind of data viz angular velocity, linear acceleration, magnetometer reading (if present),
     # but here we are interested in the orientation which can be calculated by a complex algorithm called filtering which is not in the scope of this task,
@@ -139,15 +147,21 @@ class Edrone():
         self.Ki[0] = roll.Ki * 0.008
         self.Kd[0] = roll.Kd * 0.3
 
-    def pitch_set_pid(self, roll):
-        self.Kp[0] = roll.Kp * 0.06  # This is just for an example. You can change the ratio/fraction value accordingly
-        self.Ki[0] = roll.Ki * 0.008
-        self.Kd[0] = roll.Kd * 0.3
+    def pitch_set_pid(self, pitch):
+        self.Kp[1] = pitch.Kp * 0.06  # This is just for an example. You can change the ratio/fraction value accordingly
+        self.Ki[1] = pitch.Ki * 0.008
+        self.Kd[1] = pitch.Kd * 0.3
 
-    def yaw_set_pid(self, roll):
-        self.Kp[0] = roll.Kp * 0.06  # This is just for an example. You can change the ratio/fraction value accordingly
-        self.Ki[0] = roll.Ki * 0.008
-        self.Kd[0] = roll.Kd * 0.3
+    def yaw_set_pid(self, yaw):
+        self.Kp[2] = yaw.Kp * 0.06  # This is just for an example. You can change the ratio/fraction value accordingly
+        self.Ki[2] = yaw.Ki * 0.008
+        self.Kd[2] = yaw.Kd * 0.3
+    
+    def throttle_set_pid(self, throttle):
+        self.K_throttle[0] = throttle * 0.06
+        self.K_throttle[1] = throttle * 0.008
+        self.K_throttle[2] = throttle * 0.3 
+
 
     def pid(self):
         # -----------------------------Write the PID algorithm here--------------------------------------------------------------
@@ -168,10 +182,10 @@ class Edrone():
         # Converting quaternion to euler angles
         (self.drone_orientation_euler[1], self.drone_orientation_euler[0], self.drone_orientation_euler[2]) = tf.transformations.euler_from_quaternion([self.drone_orientation_quaternion[0], self.drone_orientation_quaternion[1], self.drone_orientation_quaternion[2], self.drone_orientation_quaternion[3]])
 
-        # Convertng the range from 1000 to 2000 in the range of -10 degree to 10 degree for axes
-        self.setpoint_euler[0] = self.setpoint_cmd[0] * 0.02 - 30
-        self.setpoint_euler[1] = self.setpoint_cmd[1] * 0.02 - 30
-        self.setpoint_euler[2] = self.setpoint_cmd[2] * 0.02 - 30
+        # Convertng the range from 1000 to 2000 in the range of -100 degree to 100 degree for axes
+        self.setpoint_euler[0] = self.setpoint_cmd[0] * 0.2 - 300
+        self.setpoint_euler[1] = self.setpoint_cmd[1] * 0.2 - 300
+        self.setpoint_euler[2] = self.setpoint_cmd[2] * 0.2 - 300
 
         # Complete the equations for pitch and yaw axis
 
@@ -218,6 +232,8 @@ class Edrone():
         self.error_roll_pub.publish(self.error[0])
         self.error_pitch_pub.publish(self.error[1])
         self.error_yaw_pub.publish(self.error[2])
+        self.zero_pub.publish(0.0)
+        self.z_error_pub.publish(self.error_throttle)
 
 
 if __name__ == '__main__':
