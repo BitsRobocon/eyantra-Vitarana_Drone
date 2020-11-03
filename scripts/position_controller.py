@@ -92,7 +92,7 @@ if __name__ == '__main__':
     e_drone_controller = EdroneController()
     r = rospy.Rate(30)  # specify rate in Hz based upon your desired PID sampling time, i.e. if desired sample time is 33ms specify rate as 30Hz
     while not rospy.is_shutdown():
-        e_drone_controller.pid()
+        e_drone_controller.control_pid()
         try:
             r.sleep()
         except rospy.exceptions.ROSTimeMovedBackwardsException:
