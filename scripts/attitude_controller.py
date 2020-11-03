@@ -217,7 +217,7 @@ class Edrone():
         self.out_roll = (self.Kp[0] * self.error[0]) + (self.Ki[0] * self.error_sum[0]) + ((self.Kd[0] * (self.error[0] - self.prev_values[0]))/self.sample_time)
         self.out_pitch = (self.Kp[1] * self.error[1]) + (self.Ki[1] * self.error_sum[1]) + ((self.Kd[1] * (self.error[1] - self.prev_values[1]))/self.sample_time)
         self.out_yaw = (self.Kp[2] * self.error[2]) + (self.Ki[2] * self.error_sum[2]) + ((self.Kd[2] * (self.error[2] - self.prev_values[2]))/self.sample_time)
-        self.out_throttle = (self.K_throttle[0] * self.error_throttle) + (self.K_throttle[1] * self.sum_errort) + ((self.K_throttle[2] * (self.error_throttle-self.prev_throttle ))/self.sample_time)
+        self.out_throttle = self.throttle + (self.K_throttle[0] * self.error_throttle) + (self.K_throttle[1] * self.sum_errort) + ((self.K_throttle[2] * (self.error_throttle-self.prev_throttle ))/self.sample_time)
 
         # Changing the previous sum value
         self.prev_values[0] = self.error[0]
