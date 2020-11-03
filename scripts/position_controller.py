@@ -30,8 +30,8 @@ class EdroneController():
         self.max_values =[2000, 2000, 2000, 2000]
         self.min_values =[1000, 1000, 1000, 1000]
 
-        self.final_setpoint = [19.0000451704 , 72.0, 3] # latitude, longitude, altitude
-        self.current_point = [19.0, 72.0, 0.31] # given startpoint
+        self.final_setpoint = [19.0000451704 , 72.0, 0, 3] # latitude, longitude, yaw, altitude
+        self.current_point = [19.0, 72.0, 0, 0.31] # given startpoint
 
         self.setpoint_error = [0, 0, 0, 0] # roll, pitch, yaw, throttle
         
@@ -58,9 +58,9 @@ class EdroneController():
 
 
     def gps_callback(self, msg):
-        self.current_point[0] = msg.current_point[0] # lattitude
-        self.current_point[1] = msg.current_point[1] # longitude
-        self.current_point[2] = msg.current_point[2] # altitude
+        self.current_point[0] = msg.latitude  # latitude
+        self.current_point[1] = msg.longitude # longitude
+        self.current_point[2] = msg.altitude  # altitude
 
     def control_pid(self):
         # calculate errors
@@ -70,7 +70,7 @@ class EdroneController():
         
         # update variables
         for i in range(4):
-            self.setpoint_error[i] = (self.error[i]*self.Kp[i]) + (self.Ki[i] * self.error_sum[0]) + (self.Kd[i] * (self.error[0] - self.prev_error[0])/self.sample_time)
+            self.setpoint_error[i] = (self.error[i]*self.Kp[i]) + (self.Ki[i] * self.sum_error[i]) + (self.Kd[i] * (self.error[i] - self.prev_error[i])/self.sample_time)
         for i in range(4):
             self.prev_error[i] = self.error[i]
         # publish values
