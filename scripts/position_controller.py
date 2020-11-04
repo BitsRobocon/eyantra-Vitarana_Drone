@@ -81,9 +81,9 @@ class EdroneController():
         self.Kd[1] = pitch.Kd * 0.3
 
     def yaw_set_pid(self, yaw):
-        self.Kp[2] = yaw.Kp * 0.06  # This is just for an example. You can change the ratio/fraction value accordingly
-        self.Ki[2] = yaw.Ki * 0.008
-        self.Kd[2] = yaw.Kd * 0.3
+        self.Kp[3] = yaw.Kp * 0.06  # This is just for an example. You can change the ratio/fraction value accordingly
+        self.Ki[3] = yaw.Ki * 0.008
+        self.Kd[3] = yaw.Kd * 0.3
 
     def control_pid(self):
         # calculate errors
@@ -111,7 +111,7 @@ class EdroneController():
         self.cmd_pub.publish(self.cmd_drone)
         self.error_roll_pub.publish(self.error[0])
         self.error_pitch_pub.publish(self.error[1])
-        self.error_yaw_pub.publish(self.error[2])
+        self.error_yaw_pub.publish(self.error[3])
 
 if __name__ == '__main__':
 
