@@ -1,0 +1,16 @@
+<launch>
+     <include 
+        file="$(find gazebo_ros)/launch/empty_world.launch">
+        <arg name="world_name"  value="$(find vitarana_drone)/worlds/task.world"/>
+    </include>
+    <node name="tune_pid_drone" type="pid_tune_drone.py" pkg="pid_tune">
+
+    <param name="ppid_ui_enable" value="true"/>
+    <param name="rpid_ui_enable" value="true"/>
+    <param name="ypid_ui_enable" value="true"/>
+    <param name="tpid_ui_enable" value="true"/>
+
+    </node>
+    <node pkg="vitarana_drone" type="attitude_controller.py" name="attitude_controller" output="screen" />
+    <node pkg="vitarana_drone" type="position_controller.py" name="position_controller" output="screen" />
+</launch>

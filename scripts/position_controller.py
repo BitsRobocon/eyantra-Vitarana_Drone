@@ -8,6 +8,8 @@ This node publishes and subsribes the following topics:
 
 '''
 
+##  !!!"use roll gui for latitude, pitch gui for longitude and yaw gui for altitude."
+
 # Importing the required libraries
 
 from vitarana_drone.msg import *
@@ -46,21 +48,42 @@ class EdroneController():
         # self.pid_values_pitch = [1.02, 0, 1.2] # Kp, Ki, Kd
         # self.pid_values_yaw = [82.56, 0, 0] # Kp, Ki, Kd
         #self.pid_values_throttle = [0, 0, 0] # Kp, Ki, Kd
-        self.Kp = [4.02, 1.02, 82.56, 0]  # roll, pitch, yaw, throttle
-        self.Ki = [0, 0, 0, 0]
-        self.Kd = [2.4, 1.2, 0, 0]
+        self.Kp = [4000000, 50, 0, 172.92]  # latitude, longitude, yaw, altitude
+        self.Ki = [0, 0.32, 0, 4.32]
+        self.Kd = [5000000, 80, 0, 150.6]
 
         # Publisher
         self.cmd_pub = rospy.Publisher('/drone_command', edrone_cmd, queue_size=1)
+        self.error_roll_pub = rospy.Publisher('/latitude_r_error', Float32, queue_size=1)
+        self.error_pitch_pub = rospy.Publisher('/longitude_p_error', Float32, queue_size=1)
+        self.error_yaw_pub = rospy.Publisher('/altitude_y_error', Float32, queue_size=1)
 
         # Subscriber
         rospy.Subscriber('/edrone/gps', NavSatFix, self.gps_callback)
+        rospy.Subscriber('/pid_tuning_roll', PidTune, self.roll_set_pid)
+        rospy.Subscriber('/pid_tuning_pitch', PidTune, self.pitch_set_pid)
+        rospy.Subscriber('/pid_tuning_yaw', PidTune, self.yaw_set_pid)
 
 
     def gps_callback(self, msg):
         self.current_point[0] = msg.latitude  # latitude
         self.current_point[1] = msg.longitude # longitude
         self.current_point[2] = msg.altitude  # altitude
+
+    def roll_set_pid(self, roll):
+        self.Kp[0] = roll.Kp * 0.06  # This is just for an example. You can change the ratio/fraction value accordingly
+        self.Ki[0] = roll.Ki * 0.008
+        self.Kd[0] = roll.Kd * 0.3
+
+    def pitch_set_pid(self, pitch):
+        self.Kp[1] = pitch.Kp * 0.06  # This is just for an example. You can change the ratio/fraction value accordingly
+        self.Ki[1] = pitch.Ki * 0.008
+        self.Kd[1] = pitch.Kd * 0.3
+
+    def yaw_set_pid(self, yaw):
+        self.Kp[2] = yaw.Kp * 0.06  # This is just for an example. You can change the ratio/fraction value accordingly
+        self.Ki[2] = yaw.Ki * 0.008
+        self.Kd[2] = yaw.Kd * 0.3
 
     def control_pid(self):
         # calculate errors
@@ -86,6 +109,9 @@ class EdroneController():
         self.cmd_drone.rcThrottle = max(min(self.max_values[3], self.cmd_drone.rcThrottle), self.min_values[3])
         
         self.cmd_pub.publish(self.cmd_drone)
+        self.error_roll_pub.publish(self.error[0])
+        self.error_pitch_pub.publish(self.error[1])
+        self.error_yaw_pub.publish(self.error[2])
 
 if __name__ == '__main__':
 

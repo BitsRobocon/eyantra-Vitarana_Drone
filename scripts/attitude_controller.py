@@ -63,7 +63,7 @@ class Edrone():
         self.Ki = [0, 0, 0]
         self.Kd = [2.4, 1.2, 0]
 
-        self.K_throttle = [0, 0, 0] #  [Kp, Ki, Kd]
+        self.K_throttle = [38.4, 0, 90.6] #  [Kp, Ki, Kd]
         # -----------------------Add other required variables for pid here ----------------------------------------------
         #
         self.altitude = 0.
@@ -71,7 +71,7 @@ class Edrone():
         self.error_throttle = 0
         self.prev_throttle = 0 
         self.sum_errort = 0 
-        self.target_altitude = 3.
+        self.target_altitude = 5.
         self.prev_values = [0,0,0]
         self.error = [0,0,0]
         self.error_sum = [0,0,0]
@@ -105,10 +105,10 @@ class Edrone():
         # Subscribing to /drone_command, imu/data, /pid_tuning_roll, /pid_tuning_pitch, /pid_tuning_yaw
         rospy.Subscriber('/drone_command', edrone_cmd, self.drone_command_callback)
         rospy.Subscriber('/edrone/imu/data', Imu, self.imu_callback)
-        rospy.Subscriber('/pid_tuning_roll', PidTune, self.roll_set_pid)
-        rospy.Subscriber('/pid_tuning_pitch', PidTune, self.pitch_set_pid)
-        rospy.Subscriber('/pid_tuning_yaw', PidTune, self.yaw_set_pid)
-        rospy.Subscriber('/pid_tuning_altitude', PidTune, self.throttle_set_pid)
+        # rospy.Subscriber('/pid_tuning_roll', PidTune, self.roll_set_pid)
+        # rospy.Subscriber('/pid_tuning_pitch', PidTune, self.pitch_set_pid)
+        # rospy.Subscriber('/pid_tuning_yaw', PidTune, self.yaw_set_pid)
+        #rospy.Subscriber('/pid_tuning_altitude', PidTune, self.throttle_set_pid)
         rospy.Subscriber('/edrone/range_finder_bottom', LaserScan , self.calculate_distance)
         # -------------------------Add other ROS Subscribers here----------------------------------------------------
         # ------------------------------------------------------------------------------------------------------------
@@ -205,6 +205,10 @@ class Edrone():
         
         self.error_throttle = self.target_altitude - self.altitude
         self.sum_errort = self.sum_errort + self.error_throttle
+        
+        #integral windup
+        if self.error_throttle == 0:
+            self.sum_errort = 0
         # self.error[0] = self.setpoint_euler[0] - (self.drone_orientation_euler[0]*(180/math.pi))
         # self.error[1] = self.setpoint_euler[1] - (self.drone_orientation_euler[1]*(180/math.pi))
         # self.error[2] = self.setpoint_euler[2] - (self.drone_orientation_euler[2]*(180/math.pi))
@@ -243,11 +247,11 @@ class Edrone():
         # ------------------------------------------------------------------------------------------------------------------------
 
         self.pwm_pub.publish(self.pwm_cmd)
-        self.error_roll_pub.publish(self.error[0])
-        self.error_pitch_pub.publish(self.error[1])
-        self.error_yaw_pub.publish(self.error[2])
+        # self.error_roll_pub.publish(self.error[0])
+        # self.error_pitch_pub.publish(self.error[1])
+        # self.error_yaw_pub.publish(self.error[2])
         self.zero_pub.publish(0.0)
-        self.z_error_pub.publish(self.error_throttle)
+        #self.z_error_pub.publish(self.error_throttle)
 
 
 if __name__ == '__main__':
