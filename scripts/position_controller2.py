@@ -116,14 +116,17 @@ class EdroneController():
         self.cmd_drone.rcPitch = max(min(self.max_values[1], self.cmd_drone.rcPitch), self.min_values[1])
         self.cmd_pub.publish(self.cmd_drone)
 
-        self.error_roll_pub.publish(self.error[0])
-        self.error_pitch_pub.publish(self.error[1])
+        
 
     def control_pid(self):
         while self.current_point[3] != self.final_setpoint[3]:
             self.altitude_control()
 
         self.coordinate_control()
+
+        self.error_yaw_pub.publish(self.error[3])
+        self.error_roll_pub.publish(self.error[0])
+        self.error_pitch_pub.publish(self.error[1])
 
         if self.current_point[0] == self.final_setpoint[0] and self.current_point[1] == self.final_setpoint[1]:
             self.final_setpoint[3] == 0.31
