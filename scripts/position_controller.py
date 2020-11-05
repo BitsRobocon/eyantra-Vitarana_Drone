@@ -32,7 +32,10 @@ class EdroneController():
         self.max_values =[2000, 2000, 2000, 2000]
         self.min_values =[1000, 1000, 1000, 1000]
 
-        self.final_setpoint = [19.0000451704 , 72.0, 0, 3] # latitude, longitude, yaw, altitude
+        self.first_setpoint = [19.0 , 72.0, 0, 3]  # latitude, longitude, yaw, altitude
+        self.second_setpoint = [19.0000451704 , 72.0, 0, 3]
+        self.third_setpoint = [19.0000451704 , 72.0, 0, 0.31]
+        self.current_goal = [0, 0, 0, 0]
         self.current_point = [19.0, 72.0, 0, 0.31] # given startpoint
 
         self.error = [0, 0, 0, 0] # roll, pitch, yaw, throttle
@@ -89,9 +92,24 @@ class EdroneController():
         self.Kd[3] = throttle.Kd
 
     def control_pid(self):
+
+        # set current_goal
+        if ((math.abs(self.current_point[0] - self.first_setpoint[0]) < 0.000004517) and (math.abs(self.current_point[1] - self.first_setpoint[1]) < 0.0000047487) and (math.abs(self.current_point[2] - self.first_setpoint[3]) < 0.2)):
+            for i in range(4):
+                current_goal[i] = self.second_setpoint[i]
+        elif ((math.abs(self.current_point[0] - self.second_setpoint[0]) < 0.000004517) and (math.abs(self.current_point[1] - self.second_setpoint[1]) < 0.0000047487) and (math.abs(self.current_point[2] - self.second_setpoint[3]) < 0.2)):
+            for i in range(4):
+                current_goal[i] = self.third_setpoint[i]
+        elif ((math.abs(self.current_point[0] - self.third_setpoint[0]) < 0.000004517) and (math.abs(self.current_point[1] - self.third_setpoint[1]) < 0.0000047487) and (math.abs(self.current_point[2] - self.third_setpoint[3]) < 0.2)):
+            for i in range(4):
+                current_goal[i] = self.third_setpoint[i]
+        else:
+            for i in range(4):
+                current_goal[i] = self.first_setpoint[i]
+
         # calculate errors
         for i in range(4):
-            self.error[i] = self.final_setpoint[i] - self.current_point[i]
+            self.error[i] = self.current_goal[i] - self.current_point[i]
             self.sum_error[i] += self.error[i]
 
         # update variables
