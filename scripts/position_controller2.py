@@ -28,6 +28,10 @@ class EdroneController():
         self.sample_time = 0.060
 
         self.cmd_drone = edrone_cmd()
+        self.cmd_drone.rcThrottle = 1500
+        self.cmd_drone.rcRoll = 1500
+        self.cmd_drone.rcPitch = 1500
+        self.cmd_drone.rcYaw = 1500
 
         self.max_values =[2000, 2000, 2000, 2000]
         self.min_values =[1000, 1000, 1000, 1000]
@@ -92,7 +96,7 @@ class EdroneController():
         self.prev_error[3] = self.error[3]
         self.cmd_drone.rcThrottle = 1500 + self.setpoint_error[3]
         self.cmd_drone.rcThrottle = max(min(self.max_values[3], self.cmd_drone.rcThrottle), self.min_values[3])
-        self.cmd_pub.publish(self.cmd_drone.rcThrottle)
+        self.cmd_pub.publish(self.cmd_drone)
         self.error_yaw_pub.publish(self.error[3])
 
     def coordinate_control(self):
@@ -102,7 +106,7 @@ class EdroneController():
         self.prev_error[0] = self.error[0]
         self.cmd_drone.rcRoll = 1500 + self.setpoint_error[0]
         self.cmd_drone.rcRoll = max(min(self.max_values[0], self.cmd_drone.rcRoll), self.min_values[0])
-        self.cmd_pub.publish(self.cmd_drone.rcRoll)
+        self.cmd_pub.publish(self.cmd_drone)
 
         self.error[1] = self.final_setpoint[1] - self.current_point[1]
         self.sum_error[1] += self.error[1]
@@ -110,7 +114,7 @@ class EdroneController():
         self.prev_error[1] = self.error[1]
         self.cmd_drone.rcPitch = 1500 + self.setpoint_error[1]
         self.cmd_drone.rcPitch = max(min(self.max_values[1], self.cmd_drone.rcPitch), self.min_values[1])
-        self.cmd_pub.publish(self.cmd_drone.rcPitch)
+        self.cmd_pub.publish(self.cmd_drone)
 
         self.error_roll_pub.publish(self.error[0])
         self.error_pitch_pub.publish(self.error[1])
